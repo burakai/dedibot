@@ -1,0 +1,2 @@
+# Ignore .env to prevent displaying project API publicly
+.env

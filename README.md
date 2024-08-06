@@ -26,7 +26,7 @@ This repository contains a Python script that interacts with OpenAI's API to cre
 
 3. Create a `.env` file in the root directory of your project and add your OpenAI API key:
     ```
-    OPENAI_API_KEY=your-openai-api-key
+    OPENAI_API_KEY="your-openai-api-key"
     ```
 
 ## Usage

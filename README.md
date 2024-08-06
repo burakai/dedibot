@@ -15,8 +15,8 @@ This repository contains a Python script that interacts with OpenAI's API to cre
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/your-username/your-repo-name.git
-    cd your-repo-name
+    git clone https://github.com/burakai/dedibot.git
+    cd dedibot
     ```
 
 2. Install required packages:

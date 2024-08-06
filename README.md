@@ -54,4 +54,4 @@ This repository contains a Python script that interacts with OpenAI's API to cre
 To run the script, execute the following command in your terminal:
 
 ```sh
-python script.py
+python main.py

@@ -7,9 +7,9 @@ This repository contains a Python script that interacts with OpenAI's API to cre
 ## Prerequisites
 
 - Python 3.7 or higher
-- `dotenv` library for environment variable management
-- `openai` library for interacting with OpenAI's API
-- Custom `prints` and `utils` modules for additional functionalities (ensure these are included in your repository)
+- Python libraries:
+    - `dotenv` library for environment variable management
+    - `openai` library for interacting with OpenAI's API
 
 ## Installation
 

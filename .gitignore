@@ -3,3 +3,7 @@
 
 # Ignore .pdf files to prevent high traffic  
 .pdf
+
+# Ignore __pycache__ 
+__pycache__
+

@@ -1,2 +1,5 @@
 # Ignore .env to prevent displaying project API publicly
 .env
+
+# Ignore .pdf files to prevent high traffic  
+.pdf

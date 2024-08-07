@@ -42,6 +42,32 @@ def cold_start(client, thread_id):
     prints.print_all_messages(thread_id)
 
 
+# # Models
+def select_model(models):
+    while True:
+        try:
+            model_or_name = input(
+                f"\nEnter a number between 0 and {len(models) - 1} to select one of the above models, "
+                "or you can type the name of the model: "
+            ).strip()
+            if model_or_name.isdigit():
+                model_index = int(model_or_name)
+                if 0 <= model_index < len(models):
+                    return models[model_index]
+                else:
+                    raise ValueError("Invalid model number.")
+            else:
+                if model_or_name in models:
+                    return model_or_name
+                else:
+                    raise ValueError("Model name not found.")
+        except ValueError as e:
+            print(f"Error: {e}. Please try again.")
+        except Exception:
+            print("Model NOT found! Defaulting to gpt-4o-mini.")
+            return "gpt-4o-mini"
+
+
 # # Assistants
 def create_assistant(client, instructions, name, model):
     my_assistant = client.beta.assistants.create(
@@ -51,6 +77,34 @@ def create_assistant(client, instructions, name, model):
         model=model,
     )
     return my_assistant
+
+
+def retrieve_or_create_assistant(client, assistant_id, models, instructions):
+    while True:
+        try:
+            assistant = client.beta.assistants.retrieve(assistant_id)
+            print("Assistant retrieved.")
+            break
+        except Exception:
+            print("Assistant NOT found! You need to CREATE A NEW ASSISTANT.")
+            assistant_name = input("Enter assistant name: ").strip()
+            print("\nMake sure you've filled and saved the instructions.txt file!")
+            input("Press Enter to continue ...")
+            print("\nModels available:")
+            print("-----------------")
+
+            for idx, model in enumerate(models):
+                print(f"{idx} : {model}")
+
+            model = select_model(models)
+            assistant = create_assistant(client, instructions, assistant_name, model)
+            print("Creating assistant...")
+            break
+        finally:
+            # Placeholder for any cleanup or final actions
+            pass
+
+    return assistant
 
 
 def update_assistant(client, assistant_id, instructions, model):

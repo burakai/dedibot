@@ -1,3 +1,4 @@
+import os
 import time
 
 from dotenv import load_dotenv
@@ -16,30 +17,80 @@ load_dotenv()
 #   api_key=os.environ.get("CUSTOM_ENV_NAME"),
 # )
 
+ASSISTANT_ID = os.environ.get("ASSISTANT_ID")
+THREAD_ID = os.environ.get("THREAD_ID")
+VECTOR_STORE_ID = os.environ.get("VECTOR_STORE_ID")
+
 client = OpenAI()
+models = ["gpt-3.5-turbo", "gpt-3.5-turbo-0125", "gpt-4o", "gpt-4o-mini"]
 model = "gpt-4o"
 
-instructions = """You are a helpful document expert. You always answer in Turkish.
-        When asked a question, explain the answer using the information from the document you have access to.
-        Ensure your response is clear, concise, and directly relevant to the content of the document.
-        If the document does not contain the necessary information, politely inform the user
-        and don't suggest any next steps or additional sources that might be helpful.
-        Instead, indicate this in your answer and do NOT answer the question.
-        If you don't know the answer, you should simply say something like 'I'm sorry, but I don't know the answer'."""
-
-# Assistant
-assistant_id = "asst_fx4XZaTQcmidmhUYZY23XSmg"
-# utils.update_assistant(client, assistant_id, instructions, model)
+assistant_id = ASSISTANT_ID
+thread_id = THREAD_ID
+vector_store_id = VECTOR_STORE_ID
 
 try:
-    assistant = client.beta.assistants.retrieve(assistant_id)
-except Exception:
-    print("Assistant NOT found!\nCreate a NEW ASSISTANT.")
-    # assistant = utils.create_assistant(client, instructions, "Document Expert", model)
-finally:
-    prints.print_assistant(assistant)
-    pass
+    with open("instructions.txt", "r") as file:
+        instructions = file.read()
+except FileNotFoundError:
+    print("Instructions file NOT found!")
 
+
+# Assistant
+# utils.update_assistant(client, assistant_id, instructions, model)
+# while True:
+#     try:
+#         assistant = client.beta.assistants.retrieve(assistant_id)
+#     except Exception:
+#         print("Assistant NOT found! You need to CREATE A NEW ASSISTANT.")
+#         assistant_name = input("Enter assistant name: ").strip()
+#         print("\nMake sure you've filled and saved the instructions.txt file!")
+#         input("Press Enter to continue ...")
+#         print("\nModels available:")
+#         print("-----------------")
+#         count = 0
+#         for model in models:
+#             print(f"{count} : {model}")
+#             count += 1
+
+#         while True:
+#             model_or_name = input(
+#                 f"\nEnter a number between 0 and {count} to select one of the above models, "
+#                 "or you can type the name of the model: "
+#             )
+#             try:
+#                 model = models[int(model_or_name)]
+#             except ValueError:
+#                 model = model_or_name
+#                 assistant = utils.create_assistant(
+#                     client, instructions, assistant_name, model
+#                 )
+#             except Exception:
+#                 model = "gpt-4o-mini"
+#                 print("Model NOT found! Defaulting to gpt-4o-mini.")
+#                 assistant = utils.create_assistant(
+#                     client, instructions, assistant_name, model
+#                 )
+#                 continue
+#             else:
+#                 assistant = utils.create_assistant(
+#                     client, instructions, assistant_name, model
+#                 )
+#             finally:
+#                 print("Creating assistant...")
+#                 break
+#         continue
+#     else:
+#         print("Assistant retrieved.")
+#     finally:
+#         # prints.print_assistant(assistant)
+#         pass
+
+assistant = utils.retrieve_or_create_assistant(
+    client, assistant_id, models, instructions
+)
+
+exit()
 
 # Thread
 thread_id = "thread_aYzTO4PfioO55eDNPaHWX3l4"

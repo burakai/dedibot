@@ -4,6 +4,6 @@
 # Ignore .pdf files to prevent high traffic  
 .pdf
 
-# Ignore __pycache__ 
+# Ignore cache files 
 __pycache__
-
+.mypy_cache

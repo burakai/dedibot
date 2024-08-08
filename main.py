@@ -1,122 +1,61 @@
 import os
+
+# import sys
 import time
+from typing import Final
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 import prints
 import utils
-from utils import cold_start
 
-load_dotenv()
+# Load environment variables
+while True:
+    try:
+        load_dotenv(override=True)
+        OPENAI_API_KEY: Final = os.environ.get("OPENAI_API_KEY")
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        models_object = client.models.list()
+        break
+    except Exception as e:
+        print(f"Error: {str(e)}\n")
+        api_key = input("Please enter your OpenAI API Key: ").strip()
+        utils.update_environment(api_key=api_key)
+        continue
 
-# openai.api_key = os.environ.get("OPENAI_API_KEY")
-# defaults to getting the key using os.environ.get("OPENAI_API_KEY")
-# if you saved the key under a different environment variable name, you can do something like:
-# client = OpenAI(
-#   api_key=os.environ.get("CUSTOM_ENV_NAME"),
-# )
+models: dict[str] = utils.create_models_dict(models_object)
 
-ASSISTANT_ID = os.environ.get("ASSISTANT_ID")
-THREAD_ID = os.environ.get("THREAD_ID")
-VECTOR_STORE_ID = os.environ.get("VECTOR_STORE_ID")
-
-client = OpenAI()
-models = ["gpt-3.5-turbo", "gpt-3.5-turbo-0125", "gpt-4o", "gpt-4o-mini"]
-model = "gpt-4o"
+ASSISTANT_ID: Final = os.environ.get("ASSISTANT_ID")
+THREAD_ID: Final = os.environ.get("THREAD_ID")
+VECTOR_STORE_ID: Final = os.environ.get("VECTOR_STORE_ID")
+DEFAULT_MODEL: Final = os.environ.get("DEFAULT_MODEL")
 
 assistant_id = ASSISTANT_ID
 thread_id = THREAD_ID
 vector_store_id = VECTOR_STORE_ID
+default_model = DEFAULT_MODEL
 
-try:
-    with open("instructions.txt", "r") as file:
-        instructions = file.read()
-except FileNotFoundError:
-    print("Instructions file NOT found!")
+# Read Instructions
+instructions = utils.instructions_from_file()
 
-
-# Assistant
-# utils.update_assistant(client, assistant_id, instructions, model)
-# while True:
-#     try:
-#         assistant = client.beta.assistants.retrieve(assistant_id)
-#     except Exception:
-#         print("Assistant NOT found! You need to CREATE A NEW ASSISTANT.")
-#         assistant_name = input("Enter assistant name: ").strip()
-#         print("\nMake sure you've filled and saved the instructions.txt file!")
-#         input("Press Enter to continue ...")
-#         print("\nModels available:")
-#         print("-----------------")
-#         count = 0
-#         for model in models:
-#             print(f"{count} : {model}")
-#             count += 1
-
-#         while True:
-#             model_or_name = input(
-#                 f"\nEnter a number between 0 and {count} to select one of the above models, "
-#                 "or you can type the name of the model: "
-#             )
-#             try:
-#                 model = models[int(model_or_name)]
-#             except ValueError:
-#                 model = model_or_name
-#                 assistant = utils.create_assistant(
-#                     client, instructions, assistant_name, model
-#                 )
-#             except Exception:
-#                 model = "gpt-4o-mini"
-#                 print("Model NOT found! Defaulting to gpt-4o-mini.")
-#                 assistant = utils.create_assistant(
-#                     client, instructions, assistant_name, model
-#                 )
-#                 continue
-#             else:
-#                 assistant = utils.create_assistant(
-#                     client, instructions, assistant_name, model
-#                 )
-#             finally:
-#                 print("Creating assistant...")
-#                 break
-#         continue
-#     else:
-#         print("Assistant retrieved.")
-#     finally:
-#         # prints.print_assistant(assistant)
-#         pass
-
+# Assistant, Thread and Vector Store
 assistant = utils.retrieve_or_create_assistant(
-    client, assistant_id, models, instructions
+    client, assistant_id, models, default_model, instructions
 )
 
-exit()
+thread = utils.retrieve_or_create_thread(client, thread_id)
 
-# Thread
-thread_id = "thread_aYzTO4PfioO55eDNPaHWX3l4"
+vector_store = utils.retrieve_or_create_vector_store(client, vector_store_id)
 
-try:
-    thread = client.beta.threads.retrieve(thread_id)
-except Exception:
-    print("Thread NOT found!\nCreate a NEW THREAD.")
-    # thread = client.beta.threads.create()
-finally:
-    prints.print_thread(thread)
-    pass
-
-
-# Vector Store
-vector_store_id = "vs_pp231m0pBjMuD0gC0NOOyONM"
-
-try:
-    vector_store = client.beta.vector_stores.retrieve(vector_store_id)
-    print("Vector Store retrieved.")
-except Exception:
-    print("Vector Store NOT found!\nCreate a NEW VECTOR STORE.")
-    exit()
-finally:
-    prints.list_vector_stores(client)
-    pass
+# Update Environment
+utils.update_environment(
+    path=".env",
+    api_key=OPENAI_API_KEY,
+    assistant_id=assistant.id,
+    thread_id=thread.id,
+    vector_store_id=vector_store.id,
+)
 
 # File Handling
 files_list = prints.list_files(client)
@@ -176,9 +115,7 @@ utils.create_vs_file(client, files_list, vector_store_id)
 
 
 # Fresh Start
-content = "Where to collect data for large language models? Answer in a sentence."
-
-cold_start(client, thread_id)
+utils.cold_start(client, thread_id)
 
 print(
     f"Assistant ID: {assistant_id}\nThread ID: {thread_id}\nVector Store ID: {vector_store_id}\n"

@@ -1,13 +1,9 @@
 import time
 from datetime import datetime
 
-from openai import OpenAI
-
-client = OpenAI()
-
 
 # Print Assistants
-def print_all_assistants():
+def print_all_assistants(client):
     assistants = client.beta.assistants.list()
     for assistant in assistants.data:
         human_time = datetime.fromtimestamp(assistant.created_at).strftime(
@@ -55,7 +51,7 @@ def print_thread(thread):
 
 
 # Print Messages
-def print_all_messages(thread_id):
+def print_all_messages(client, thread_id):
     try:
         messages = client.beta.threads.messages.list(thread_id=thread_id)
         message_counter = 0
@@ -70,14 +66,14 @@ def print_all_messages(thread_id):
     print(f"--- Total Messages: {message_counter} ---\n")
 
 
-def print_last_message(thread_id):
+def print_last_message(client, thread_id):
     messages = client.beta.threads.messages.list(thread_id=thread_id)
     last_message = messages.data[-1]
     print(last_message.content[0].text.value)
 
 
 # Print Runs
-def print_all_runs(thread_id):
+def print_all_runs(client, thread_id):
     runs = client.beta.threads.runs.list(thread_id=thread_id)
     for run in runs.data:
         print(
@@ -86,7 +82,7 @@ def print_all_runs(thread_id):
 
 
 # Print Steps
-def print_run_steps(thread_id, run_id):
+def print_run_steps(client, thread_id, run_id):
 
     run_steps = client.beta.threads.runs.steps.list(thread_id=thread_id, run_id=run_id)
 
@@ -106,7 +102,7 @@ def print_run_steps(thread_id, run_id):
 
 
 # Print Response
-def print_response(thread_id):
+def print_response(client, thread_id):
     while True:
         time.sleep(2)
         messages = client.beta.threads.messages.list(thread_id=thread_id)

@@ -2,7 +2,7 @@
 .env
 
 # Ignore .pdf files to prevent high traffic  
-.pdf
+*.pdf
 
 # Ignore cache files 
 __pycache__

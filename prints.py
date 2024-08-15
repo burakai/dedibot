@@ -119,18 +119,37 @@ def print_response(client, thread_id):
 
 def list_files(client):
     files_list = []
-    files = client.files.list()
-    counter = 0
-    if not files.data:
-        # print("No files found.")
-        pass
-    else:
-        for file in files.data:
-            files_list.append(file.id)
-            counter += 1
-            print(f"{counter} - ID: {file.id}")
+    if not client.files.list().data:
+        print("No files found.")
+        return
 
-    print(f"Total Files: {counter}\n---------------------------\n")
+    files = client.files.list()
+    for counter, file in enumerate(files.data, start=1):
+        file_info = {
+            "id": file.id,
+            "filename": file.filename,
+            "purpose": file.purpose,
+            "bytes": file.bytes,
+            "status": file.status,
+        }
+        files_list.append(file_info)
+    print(
+        f"\nTotal Files: {len(files_list)}",
+        "-" * (100 - (len("Total Files:  ") + len(str(len(files_list))))),
+        "\n"
+        + f'{"No.":<5}{"ID":<32}{"Filename":<26}{"Size":<7}{"":<7}{"Purpose":<14}{"Status":<8}',
+        "\n" + "-" * 100,
+    )
+
+    for i, file_info in enumerate(files_list):
+        # Convert bytes to MB for proper display
+        size_mb = file_info["bytes"] / (1024 * 1024)  # Convert bytes to MB
+        print(
+            f"{i + 1:<5}{file_info['id']:<32}{file_info['filename']:<26}"
+            + f"{size_mb:<7.2f}{"MB":<7}{file_info['purpose']:<14}{file_info['status']:<8}"
+        )
+
+    print("")
     return files_list
 
 

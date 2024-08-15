@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import datetime
 
@@ -18,13 +19,14 @@ def timer(f):
         start = time.time()
         result = f(*args, **kwargs)
         end = time.time()
-        print(f"\n{f.__name__} took {end - start} seconds.\n")
+        print(f"{f.__name__} took {end - start} seconds.")
         return result
 
     return wrapper
 
 
 # # Fresh Start
+@timer
 def delete_all_messages(client, thread_id) -> None:
     print("Deleting all messages...\n")
     messages = client.beta.threads.messages.list(thread_id=thread_id)
@@ -41,17 +43,31 @@ def cold_start(client, thread_id) -> None:
     delete_all_messages(client, thread_id)
     time.sleep(1)
     print("Cold start!\n")
-    prints.print_all_messages(thread_id)
+    prints.print_all_messages(client, thread_id)
     return None
 
 
 # # Models
-def update_environment(
+def check_env(env_path: str = ".env") -> None:
+    if not os.path.exists(env_path):
+        with open(env_path, "w") as file:
+            file.write(
+                'OPENAI_API_KEY=""\n'
+                'ASSISTANT_ID=""\n'
+                'THREAD_ID=""\n'
+                'VECTOR_STORE_ID=""\n'
+                'DEFAULT_MODEL=""\n'
+            )
+        print("Environment file has been created and written to.")
+
+
+def update_env(
     path: str = ".env",
     api_key: str = None,
     assistant_id: str = None,
     thread_id: str = None,
     vector_store_id: str = None,
+    default_model: str = None,
 ) -> None:
     with open(path, "r") as file:
         lines = file.readlines()
@@ -78,6 +94,8 @@ def update_environment(
         env_vars["THREAD_ID"] = thread_id
     if vector_store_id is not None:
         env_vars["VECTOR_STORE_ID"] = vector_store_id
+    if default_model is not None:
+        env_vars["DEFAULT_MODEL"] = default_model
 
     # Write the updated environment variables back to the .env file
     with open(path, "w") as file:
@@ -85,6 +103,7 @@ def update_environment(
             if quotes.get(key, False):
                 value = f'"{value}"'  # Add quotes back if they were originally present
             file.write(f"{key}={value}\n")
+    return None
 
 
 def create_models_dict(sync_page) -> dict:
@@ -165,13 +184,13 @@ def instructions_from_file(path: str = "instructions.txt") -> str:
 
 
 def create_assistant(client, instructions, name, model):
-    my_assistant = client.beta.assistants.create(
+    assistant = client.beta.assistants.create(
         instructions=instructions,
         name=name,
         tools=[{"type": "file_search"}],
         model=model,
     )
-    return my_assistant
+    return assistant
 
 
 def retrieve_or_create_assistant(
@@ -180,8 +199,8 @@ def retrieve_or_create_assistant(
     while True:
         try:
             assistant = client.beta.assistants.retrieve(assistant_id)
-            update_environment(assistant_id=assistant.id)
-            print(f"Assistant retrieved: {assistant.name}")
+            update_env(assistant_id=assistant.id)
+            print(f'Assistant "{assistant.name}" retrieved. ID: {assistant.id}')
             break
         except Exception:
             print("Assistant NOT found! You need to CREATE A NEW ASSISTANT.")
@@ -201,19 +220,53 @@ def retrieve_or_create_assistant(
     return assistant
 
 
-def update_assistant(client, assistant_id, instructions, model):
-    my_assistant = client.beta.assistants.update(
-        assistant_id,
-        instructions=instructions,
-        model=model,
-        tools=[{"type": "file_search"}],
-    )
-    return my_assistant
+def update_assistant(client, assistant_id, vector_store_id, instructions, model):
+    """
+    Update the assistant's configuration with new instructions and model.
+
+    Parameters:
+        client: The API client to interact with the service.
+        assistant_id (str): The ID of the assistant to update.
+        vector_store_id (str): The ID of the vector store to associate.
+        instructions (str): New instructions for the assistant.
+        model (str): The machine learning model to use.
+
+    Returns:
+        Updated assistant object.
+
+    Raises:
+        ValueError: If parameters are invalid.
+        Exception: For any API call failures.
+    """
+    # Validate parameters
+    if not isinstance(assistant_id, str) or not isinstance(vector_store_id, str):
+        raise ValueError("assistant_id and vector_store_id must be strings.")
+
+    # Debugging: Print types of parameters
+    print(f"assistant_id type: {type(assistant_id)}")
+    print(f"vector_store_id type: {type(vector_store_id)}")
+    print(f"instructions type: {type(instructions)}")
+    print(f"model type: {type(model)}")
+
+    try:
+        my_assistant = client.beta.assistants.update(
+            assistant_id,
+            instructions=instructions,
+            model=model,
+            tools=[{"type": "file_search"}],
+            tool_resources={"vector_store_ids": [vector_store_id]},  # Should be a list
+        )
+        return my_assistant
+    except Exception as e:
+        # Log the error (logging setup not shown here)
+        print(f"Error updating assistant: {e}")
+        raise
 
 
 # # Threads
 def create_thread(client):
     thread = client.beta.threads.create()
+    print(f"Thread created. ID: {thread.id}")
     return thread
 
 
@@ -221,10 +274,10 @@ def retrieve_or_create_thread(client, thread_id: str):
     while True:
         try:
             thread = client.beta.threads.retrieve(thread_id)
-            print(f"Thread retrieved: {thread.id}")
+            print(f"Thread retrieved. ID: {thread.id}")
             break
         except Exception:
-            print("Thread NOT found!\nCreate a NEW THREAD.")
+            print("Thread NOT found! Creating a NEW THREAD.")
             thread = create_thread(client)
             break
     return thread
@@ -232,7 +285,8 @@ def retrieve_or_create_thread(client, thread_id: str):
 
 # # Vector Stores
 def create_vector_store(client):
-    vector_store = client.beta.vector_stores.create(name="Support FAQ")
+    name = input("Enter a name for the Vector Store: ").strip()
+    vector_store = client.beta.vector_stores.create(name=name)
     return vector_store
 
 
@@ -240,10 +294,12 @@ def retrieve_or_create_vector_store(client, vector_store_id):
     while True:
         try:
             vector_store = client.beta.vector_stores.retrieve(vector_store_id)
-            print(f"Vector Store retrieved: {vector_store.id}")
+            print(
+                f'Vector Store "{vector_store.name}" retrieved. ID: {vector_store.id}'
+            )
             break
         except Exception:
-            print("Vector Store NOT found!\nCreate a NEW VECTOR STORE.")
+            print("Vector Store NOT found!\nCreating a NEW VECTOR STORE.")
             vector_store = create_vector_store(client)
             break
     return vector_store
@@ -261,7 +317,7 @@ def create_message(client, content, thread_id):
 # # Runs
 def create_run(client, assistant_id, thread_id):
     run = client.beta.threads.runs.create(
-        assistant_id=assistant_id, thread_id=thread_id
+        thread_id=thread_id, assistant_id=assistant_id, tools=[{"type": "file_search"}]
     )
 
     return run
@@ -277,12 +333,35 @@ def upload_file(client, path, purpose="assistants"):
         pass
 
 
-def upload_file_batch():
-    ...
-    pass
+def upload_file_batch(client, vector_store):
+    # Ready the files for upload to OpenAI
+
+    file_paths = []
+    while True:
+        file_path = input(
+            "If you want to upload individual files, enter the file name including the extension: \n"
+            "If you want to upload a folder, enter the folder name (e.g.: fourier books): \n"
+            "If you are finished, simply press the ‘Enter’ key without pressing any other key: ",
+        )
+        if file_path.lower() in [""]:
+            return
+        else:
+            try:
+                file_paths.append(file_path)
+            except Exception as e:
+                print(f"Error: {str(e)}\n")
+                continue
+            else:
+                file_streams = [open(path, "rb") for path in file_paths]
+                file_batch = client.beta.vector_stores.file_batches.upload_and_poll(
+                    vector_store_id=vector_store.id, files=file_streams
+                )
+        print(file_batch.file_counts)
+    return file_batch
 
 
 def delete_files(client, files_list: list[str]) -> None:
+    """Delete all files in the list."""
     for file_id in files_list:
         deleted_file = client.files.delete(file_id)
         print(f"{deleted_file} deleted.")
@@ -291,7 +370,7 @@ def delete_files(client, files_list: list[str]) -> None:
 
 
 # # Vector Store Files
-def create_vs_file(client, files_list, vector_store_id):
+def add_to_vs(client, files_list: list[str], vector_store_id: str) -> None:
     for file_id in files_list:
         vector_store_file = client.beta.vector_stores.files.create(
             vector_store_id=vector_store_id,
@@ -301,7 +380,7 @@ def create_vs_file(client, files_list, vector_store_id):
     return None
 
 
-def delete_vs_files(client, files_list, vector_store_id):
+def delete_from_vs(client, files_list, vector_store_id):
     for file_id in files_list:
         print(f"\n \n file_id: {len(file_id)}, vector_store_id: {len(vector_store_id)}")
         print(f"\n \n file_id: {file_id}, vector_store_id: {vector_store_id}")
@@ -310,3 +389,28 @@ def delete_vs_files(client, files_list, vector_store_id):
         print(f"{deleted_file} deleted from {vector_store_id}.")
     print("All vector store files deleted.")
     return None
+
+
+def chat(client, assistant_id: str, thread_id: str) -> None:
+    while True:
+        text = input("\nUser: ")
+        if text.lower() in ["exit", "quit", "q", "bye"]:
+            print("Sorry to see you go!")
+            break
+        else:
+            pass
+
+        create_message(client, text, thread_id)
+
+        run = create_run(client, assistant_id, thread_id)
+        while not run.completed_at:
+            run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+            print(run.status)
+            # time.sleep(1)
+
+        prints.print_response(client, thread_id)
+
+        # print_run_steps(thread_id, run.id)
+
+
+# utils.print_all_messages(thread_id)

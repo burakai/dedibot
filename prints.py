@@ -117,6 +117,7 @@ def print_response(client, thread_id):
         break
 
 
+# Print Files
 def list_files(client):
     files_list = []
     if not client.files.list().data:
@@ -137,7 +138,7 @@ def list_files(client):
         f"\nTotal Files: {len(files_list)}",
         "-" * (100 - (len("Total Files:  ") + len(str(len(files_list))))),
         "\n"
-        + f'{"No.":<5}{"ID":<32}{"Filename":<26}{"Size":<7}{"":<7}{"Purpose":<14}{"Status":<8}',
+        + f'{"No.":<5}{"Filename":<30}{"ID":<32}{"Size":<7}{"":<5}{"Purpose":<12}{"Status":<8}',
         "\n" + "-" * 100,
     )
 
@@ -145,29 +146,54 @@ def list_files(client):
         # Convert bytes to MB for proper display
         size_mb = file_info["bytes"] / (1024 * 1024)  # Convert bytes to MB
         print(
-            f"{i + 1:<5}{file_info['id']:<32}{file_info['filename']:<26}"
-            + f"{size_mb:<7.2f}{"MB":<7}{file_info['purpose']:<14}{file_info['status']:<8}"
+            f"{i + 1:<5}{file_info['filename']:<30}{file_info['id']:<32}"
+            + f"{size_mb:<7.2f}{"MB":<5}{file_info['purpose']:<12}{file_info['status']:<8}"
         )
 
     print("")
     return files_list
 
 
-def list_vector_stores(client):
+# Print User Files and Folders
+def list_user_files(extension_list: list[str] = ['.pdf']) -> list[str]:
+    user_files_list = []
+    return user_files_list
+
+
+def list_user_folders() -> list[str]:
+    user_folders_list = []
+    return user_folders_list
+
+
+def print_files_and_folders(user_files_list: list[str], user_folders_list: list[str]) -> None:
+    ...
+    pass
+
+
+# Print Vector Stores
+def list_vector_stores(client) -> list[str]:
+    vector_stores_list = []
     vector_stores = client.beta.vector_stores.list()
     for vector_store in vector_stores.data:
-        print(f"ID: {vector_store.id}\n")
-        return vector_store
+        print(f"ID: {vector_store.id}")
+        vector_stores_list.append(vector_store.id)
+    return vector_stores_list
 
 
-def list_vector_store_files(client, vector_store_id):
-    vector_store_files = client.beta.vector_stores.files.list(
-        vector_store_id=vector_store_id
-    )
-    vector_store_files_ids = []
-    for vector_store_file in vector_store_files.data:
-        vector_store_files_ids.append(vector_store_file.id)
-        print(
-            f"ID: {vector_store_file.id}, bytes: {vector_store_file.usage_bytes}, status: {vector_store_file.status}\n"
+# Print Vector Store Files
+def list_vs_files(client, vector_stores_list: list[str]):
+    for vector_store_id in vector_stores_list:
+        print(f"\nVector Store ID: {vector_store_id}")
+        vs_files = client.beta.vector_stores.files.list(
+            vector_store_id=vector_store_id
         )
-    return vector_store_files_ids
+        for vs_file in vs_files.data:
+            print(
+                f"ID: {vs_file.id}, bytes: {vs_file.usage_bytes}, status: {vs_file.status}"
+            )
+        # vector_store_files_ids = []
+        # for vector_store_file in vs_files.data:
+        #     vector_store_files_ids.append(vector_store_file.id)
+        #     print(
+        #         f"ID: {vector_store_file.id}, bytes: {vector_store_file.usage_bytes}, sstatus: {vector_store_file.status}\n"
+        #     )

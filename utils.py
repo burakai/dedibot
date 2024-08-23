@@ -305,6 +305,22 @@ def retrieve_or_create_vector_store(client, vector_store_id):
     return vector_store
 
 
+def delete_vector_store_s(client, vector_stores_list: list) -> None:
+    for vs in vector_stores_list:
+        deleted_vector_store = client.beta.vector_stores.delete(vector_store_id=vs)
+        print(f"{deleted_vector_store} deleted.")
+    return None
+
+
+def delete_all_vector_stores(client) -> None:
+    vector_stores = client.beta.vector_stores.list()
+    for vector_store in vector_stores.data:
+        deleted_vector_store = client.beta.vector_stores.delete(vector_store.id)
+        print(f"{deleted_vector_store} deleted.")
+    print("All vector stores deleted.")
+    return None
+
+
 # # Messages
 def create_message(client, content, thread_id):
     client.beta.threads.messages.create(

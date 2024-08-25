@@ -24,9 +24,11 @@ This repository contains a Python script that interacts with OpenAI's API to cre
     pip install -r requirements.txt
     ```
 
-3. Create a `.env` file in the root directory of your project and add your OpenAI API key:
+3. `.env` file in the root directory of your project will be created automatically by the script in the new version:
     ```
+    ... 
     OPENAI_API_KEY="your-openai-api-key"
+    ...
     ```
 
 ## Usage

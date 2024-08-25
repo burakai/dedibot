@@ -181,19 +181,32 @@ def list_vector_stores(client) -> list[str]:
 
 
 # Print Vector Store Files
-def list_vs_files(client, vector_stores_list: list[str]):
-    for vector_store_id in vector_stores_list:
-        print(f"\nVector Store ID: {vector_store_id}")
-        vs_files = client.beta.vector_stores.files.list(
-            vector_store_id=vector_store_id
+def print_vs_n_files(client, vector_store):
+    print(f"\nID: {vector_store.id}, Name: {vector_store.name}, "
+          + f"Usage Bytes: {vector_store.usage_bytes}, "
+          + f"Status: {vector_store.status},\n"
+          + f"File Counts: {vector_store.file_counts}\n"
+          + f"Expires After: {vector_store.expires_after}, "
+          + f"Expires At: {vector_store.expires_at}, "
+          + f"Last Active: {vector_store.last_active_at}")
+    vs_files = client.beta.vector_stores.files.list(
+        vector_store_id=vector_store.id
+    )
+    print(f"Total Files: {len(vs_files.data)}")
+    for vs_file in vs_files.data:
+        print(
+            f"ID: {vs_file.id}, bytes: {vs_file.usage_bytes}, status: {vs_file.status}"
         )
-        for vs_file in vs_files.data:
-            print(
-                f"ID: {vs_file.id}, bytes: {vs_file.usage_bytes}, status: {vs_file.status}"
-            )
-        # vector_store_files_ids = []
-        # for vector_store_file in vs_files.data:
-        #     vector_store_files_ids.append(vector_store_file.id)
-        #     print(
-        #         f"ID: {vector_store_file.id}, bytes: {vector_store_file.usage_bytes}, sstatus: {vector_store_file.status}\n"
-        #     )
+
+
+def list_vs_n_files(client, vector_stores=None) -> None:
+    # vs_n_files_list = []
+    if vector_stores is None:
+        vector_stores = client.beta.vector_stores.list()
+        for vector_store in vector_stores:
+            print_vs_n_files(client, vector_store)
+        return
+    else:
+        print_vs_n_files(client, vector_stores)
+
+    return None

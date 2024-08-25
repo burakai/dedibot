@@ -12,7 +12,7 @@ import utils
 #     "Choose one of the options below and press 'Enter':\n\n"
 #     "[0] Start from zero    \n"
 #     + "[1] Load defaults (recents)   \n"
-#     + "[2] Load defaults and messages    \n"
+#     + "[2] Load defaults with chat history    \n"
 #     + "[3] Edit files and load defaults   \n"
 #     + "[4] Change defaults [Advanced] \n"
 # )
@@ -67,17 +67,9 @@ utils.update_env(
 )
 
 # File Handling
-files_list = prints.list_files(client)
+# files_list = prints.list_files(client)
 
-vector_stores_list = prints.list_vector_stores(client)
-
-vector_store_files_list = prints.list_vs_files(client, vector_stores_list)
-
-# utils.delete_vector_store_s(client, ["vs_mdyPfIICcTKWcRVHWTnm2Hdy"])
-
-# vector_store_files_list = prints.list_vs_files(client, vector_stores_list)
-
-sys.exit(0)
+utils.manage_vector_stores(client, vector_store)
 
 file_batch = utils.upload_file_batch(client, vector_store)
 
@@ -86,9 +78,9 @@ assistant = client.beta.assistants.update(
     tool_resources={"file_search": {"vector_store_ids": [vector_store.id]}},
 )
 
-assistant = utils.update_assistant(
-    client, assistant.id, vector_store.id, instructions, default_model
-)
+# assistant = utils.update_assistant(
+#     client, assistant.id, vector_store.id, instructions, default_model
+# )
 
 # List vector store files again
 files_list = prints.list_files(client)

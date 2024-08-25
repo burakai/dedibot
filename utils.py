@@ -385,6 +385,11 @@ def delete_files(client, files_list: list[str]) -> None:
     return None
 
 
+def manage_files(client, vector_store, choice=None) -> None:
+    ...
+    pass
+
+
 # # Vector Store Files
 def add_to_vs(client, files_list: list[str], vector_store_id: str) -> None:
     for file_id in files_list:
@@ -405,6 +410,98 @@ def delete_from_vs(client, files_list, vector_store_id):
         print(f"{deleted_file} deleted from {vector_store_id}.")
     print("All vector store files deleted.")
     return None
+
+
+def manage_vector_stores(client, vector_store, choice=None) -> None:
+    def get_choice(prompt):
+        """Helper function to get user input with error handling."""
+        try:
+            return input(prompt)
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            return None
+
+    while True:
+        try:
+            if choice is None:
+                prints.list_vs_n_files(client, vector_stores=vector_store)
+                choice = get_choice(
+                    "\n --> Press 'Enter' to edit (upload, add or remove) files in the current vector store, OR:\n"
+                    "Choose one of the options below: \n\n"
+                    + "[C]reate a new vector store\n"
+                    + "[D]elete current vector store\n"
+                    + "[L]ist existing vector stores\n"
+                    + "[Q]uit\n\n"
+                )
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            choice = get_choice(
+                "\n --> NO Vector store is selected, please choose one of the options below: \n\n"
+                + "[C]reate a new vector store\n"
+                + "[L]ist existing vector stores\n"
+                + "[Q]uit\n\n"
+            )
+            continue
+
+        # Edit files in the current vector store
+        if choice == "":
+            manage_files(client, vector_store)
+            choice = None
+            break
+
+        # Create a new vector store
+        elif choice.lower() in ["c", "create"]:
+            vector_store = create_vector_store(client)
+            update_env(vector_store_id=vector_store.id)
+            choice = None
+            continue
+
+        # Delete the current vector store
+        elif choice.lower() in ["d", "delete"]:
+            if vector_store:
+                try:
+                    delete_vector_store_s(client, [vector_store.id])
+                    update_env(vector_store_id="")
+                    print("Vector store deleted.")
+                except Exception as e:
+                    print(f"Error: {str(e)}")
+                    print(
+                        "No vector store found to delete. Please create a new vector store or select an existing one."
+                    )
+            else:
+                print(
+                    "No vector store is currently selected. Please create or select a vector store first."
+                )
+            choice = None
+            continue
+
+        # List existing vector stores
+        elif choice.lower() in ["l", "list"]:
+            prints.list_vs_n_files(client, vector_stores=None)
+            while True:
+                choice = get_choice(
+                    "\n --> Choose one of the vector stores above, OR:\n\n"
+                    "Press 'Enter' key to go to upper menu\n\n"
+                )
+                if choice == "":
+                    break  # Go back to the upper menu
+                elif choice.isdigit() and int(choice) in range(1, 10):
+                    print("Selected vector store option not implemented yet.")
+                    # Additional logic for selecting a vector store would go here
+                else:
+                    print("\nInvalid choice. Please try again.")
+            choice = None
+            continue
+
+        # Quit the program
+        elif choice.lower() in ["q", "quit"]:
+            print("Exiting the program.")
+            break
+
+        # Invalid choice handling
+        else:
+            print("\nInvalid choice. Please try again.")
+            choice = None
 
 
 def chat(client, assistant_id: str, thread_id: str) -> None:

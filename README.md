@@ -1,4 +1,4 @@
-# Dedibot
+# MOOZE
 
 ## Overview
 
@@ -15,8 +15,8 @@ This repository contains a Python script that interacts with OpenAI's API to cre
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/burakai/dedibot.git
-    cd dedibot
+    git clone https://github.com/burakai/mooze.git
+    cd mooze
     ```
 
 2. Install required packages:
